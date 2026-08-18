@@ -1,5 +1,6 @@
 ﻿using BookCatalog.Application.Common.Repositories;
 using BookCatalog.Application.Features.Books;
+using BookCatalog.Application.Common.Exceptions;
 using BookCatalog.Domain.Entities;
 using BookCatalog.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -40,7 +41,8 @@ namespace BookCatalog.Infrastructure.Repositories
 
         public async Task<BooksResponseDto> GetBookByIdAsync(int id)
         {
-            var book = await appDbContext.Books.FindAsync(id);
+            var book = await appDbContext.Books.FindAsync(id)
+                ?? throw new NotFoundException(nameof(Book), id);
 
             var result = new BooksResponseDto
             {
@@ -63,7 +65,8 @@ namespace BookCatalog.Infrastructure.Repositories
 
         public async Task<bool> UpdateBook(BooksResponseDto booksResponseDto)
         {
-            var book = await appDbContext.Books.FindAsync(booksResponseDto.BookId);
+            var book = await appDbContext.Books.FindAsync(booksResponseDto.BookId)
+                ?? throw new NotFoundException(nameof(Book), booksResponseDto.BookId);
 
             book.Title = booksResponseDto.Title;
             book.Description = booksResponseDto.Description;

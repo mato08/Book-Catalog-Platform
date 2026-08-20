@@ -1,20 +1,17 @@
 ﻿using BookCatalog.Application.Common.Repositories;
 using BookCatalog.Application.Features.Books;
+using BookCatalog.Application.Common.Exceptions;
 using BookCatalog.Domain.Entities;
 using BookCatalog.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
-using System.Text;
-using System.Threading.Tasks;
+using BookCatalog.Application.Features.Books.CreateBooks;
 
 namespace BookCatalog.Infrastructure.Repositories
 {
     public class BookRepository(AppDbContext appDbContext) : IBooksRepository
     {
-        public async Task<IReadOnlyList<BooksResponseDto>> GetBooksAsync(int reviewPage = 1, int reviewPageSize = 20)
+        public async Task<IReadOnlyList<BooksResponseDto>> GetBooksAsync(int reviewPage = 1, int reviewPageSize = 20, CancellationToken cancellationToken = default)
         {
             return await appDbContext.Books
                  .Skip((reviewPage - 1) * reviewPageSize)
@@ -34,85 +31,86 @@ namespace BookCatalog.Infrastructure.Repositories
                      },
                      Description = x.Description,
                  })
-                 .ToListAsync();
+                 .ToListAsync(cancellationToken);
         }
 
 
-        public async Task<BooksResponseDto> GetBookByIdAsync(int id)
+        public async Task<BooksResponseDto> GetBookByIdAsync(int id, CancellationToken cancellationToken = default)
         {
-            var book = await appDbContext.Books.FindAsync(id);
-
-            var result = new BooksResponseDto
-            {
-                BookId = book.Id,
-                Title = book.Title,
-                Genre = book.Genre,
-                Author = new AuthorDto
+            return await appDbContext.Books
+                .Where(book => book.Id == id)
+                .Select(book => new BooksResponseDto
                 {
-                    Id = book.Author.Id,
-                    Name = book.Author.Name,
-                    LastName = book.Author.LastName,
-                    Biography = book.Author.Biography,
-                    BirthDate = book.Author.BirthDate,
-                },
-                Description = book.Description,
-            };
-
-            return result;
+                    BookId = book.Id,
+                    Title = book.Title,
+                    Genre = book.Genre,
+                    Author = new AuthorDto
+                    {
+                        Id = book.Author.Id,
+                        Name = book.Author.Name,
+                        LastName = book.Author.LastName,
+                        Biography = book.Author.Biography,
+                        BirthDate = book.Author.BirthDate,
+                    },
+                    Description = book.Description,
+                })
+                .FirstOrDefaultAsync(cancellationToken)
+                ?? throw new NotFoundException(nameof(Book), id);
         }
 
-        public async Task<bool> UpdateBook(BooksResponseDto booksResponseDto)
+        public async Task<bool> UpdateBook(BooksResponseDto booksResponseDto, CancellationToken cancellationToken = default)
         {
-            var book = await appDbContext.Books.FindAsync(booksResponseDto.BookId);
+            var book = await appDbContext.Books.FindAsync([booksResponseDto.BookId], cancellationToken)
+                ?? throw new NotFoundException(nameof(Book), booksResponseDto.BookId);
 
             book.Title = booksResponseDto.Title;
             book.Description = booksResponseDto.Description;
             book.Genre = booksResponseDto.Genre;
             book.AuthorId = booksResponseDto.Author.Id;
 
-            await appDbContext.SaveChangesAsync();
+            await appDbContext.SaveChangesAsync(cancellationToken);
 
             return true;
         }
 
-        public async Task<int> CreateBookAsync(BooksResponseDto booksResponseDto)
+        public async Task<CreateBooksResult> CreateBookAsync(CreateBooksCommand createBooksCommand, CancellationToken cancellationToken = default)
         {
             var book = new Book 
             {
-                Id = booksResponseDto.BookId,
-                Title = booksResponseDto.Title,
-                Description = booksResponseDto.Description,
-                Genre = booksResponseDto.Genre,
+                Id = createBooksCommand.Id,
+                Title = createBooksCommand.Title,
+                Description = createBooksCommand.Description,
+                Genre = createBooksCommand.Genre,
                 Author = new Author {
-                    Id = booksResponseDto.Author.Id,
-                    Name = booksResponseDto.Author.Name,
-                    LastName = booksResponseDto.Author.LastName,
-                    Biography = booksResponseDto.Author.Biography,
-                    BirthDate = booksResponseDto.Author.BirthDate,
+                    Id =    createBooksCommand.Author.Id,
+                    Name = createBooksCommand.Author.Name,
+                    LastName = createBooksCommand.Author.LastName,
+                    Biography = createBooksCommand.Author.Biography,
+                    BirthDate = createBooksCommand.Author.BirthDate,
                 }
             };
 
-            await appDbContext.Books.AddAsync(book);
-            await appDbContext.SaveChangesAsync();
+            await appDbContext.Books.AddAsync(book, cancellationToken);
+            await appDbContext.SaveChangesAsync(cancellationToken);
 
-            return book.Id;
+            var createBookResult = new CreateBooksResult
+            {
+                Id = book.Id,
+            };
+
+            return createBookResult;
         }
 
-        public async Task<bool> DeleteBookAsync(int id)
+        public async Task<bool> DeleteBookAsync(int id, CancellationToken cancellationToken = default)
         {
-            var book = await appDbContext.Books.FindAsync(id);
-
-            if (book == null)
-            {
-                return false;
-            }
+            var book = await appDbContext.Books.FindAsync([id], cancellationToken)
+                ?? throw new NotFoundException(nameof(Book), id);
 
             appDbContext.Books.Remove(book);
 
-            await appDbContext.SaveChangesAsync();
+            await appDbContext.SaveChangesAsync( cancellationToken);
 
             return true;
-
         }
     }
 }

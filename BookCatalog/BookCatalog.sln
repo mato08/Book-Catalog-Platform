@@ -12,6 +12,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BookCatalog.Application", "BookCatalog.Application\BookCatalog.Application.csproj", "{3FA9393D-2876-480C-8E4A-C01F53614279}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BookCatalog.Tests", "BookCatalog.Tests\BookCatalog.Tests.csproj", "{68519AE6-4292-4CAF-BB99-174B7AD4F79B}"
+	ProjectSection(ProjectDependencies) = postProject
+		{3FA9393D-2876-480C-8E4A-C01F53614279} = {3FA9393D-2876-480C-8E4A-C01F53614279}
+		{DCBCC4BB-D816-4C14-98CC-23169C9A403F} = {DCBCC4BB-D816-4C14-98CC-23169C9A403F}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

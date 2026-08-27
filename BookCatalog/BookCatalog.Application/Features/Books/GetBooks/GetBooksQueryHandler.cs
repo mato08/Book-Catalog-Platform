@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace BookCatalog.Application.Features.Books.GetBooks
 {
-    public class GetBooksQueryHandler : IRequestHandler<GetBooksQuery, IReadOnlyList<BooksResponseDto>>
+    public class GetBooksQueryHandler : IRequestHandler<GetBooksQuery, GetBooksResult>
     {
         private readonly IBooksRepository repository;
 
@@ -18,9 +18,9 @@ namespace BookCatalog.Application.Features.Books.GetBooks
             this.repository = repository;
         }
 
-        public async Task<IReadOnlyList<BooksResponseDto>> Handle(GetBooksQuery request, CancellationToken cancellationToken)
+        public async Task<GetBooksResult> Handle(GetBooksQuery request, CancellationToken cancellationToken)
         {
-            return await repository.GetBooksAsync(request.ReviewPage, request.ReviewPageSize,cancellationToken);
+            return await repository.GetBooksAsync(request.Filter, request.ReviewPage, request.ReviewPageSize,cancellationToken);
         }
     }
 }

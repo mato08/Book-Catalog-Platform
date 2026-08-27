@@ -6,14 +6,30 @@ using BookCatalog.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using BookCatalog.Application.Features.Books.CreateBooks;
+using BookCatalog.Application.Features.Books.GetBooks;
 
 namespace BookCatalog.Infrastructure.Repositories
 {
     public class BookRepository(AppDbContext appDbContext) : IBooksRepository
     {
-        public async Task<IReadOnlyList<BooksResponseDto>> GetBooksAsync(int reviewPage = 1, int reviewPageSize = 20, CancellationToken cancellationToken = default)
+        public async Task<GetBooksResult> GetBooksAsync(GetBooksFilterQuery filter, int reviewPage = 1, int reviewPageSize = 20, CancellationToken cancellationToken = default)
         {
-            return await appDbContext.Books
+            var query = appDbContext.Books.AsQueryable();
+
+            if (filter.Rating.HasValue)
+            {
+                query = query.Where(x => x.Rating >= filter.Rating.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(filter.Genre))
+            {
+                query = query.Where(x => x.Genre == filter.Genre);
+            }
+
+            var count = await query.CountAsync(cancellationToken);
+
+             var books = await query
+                 .OrderBy(x => x.Id)
                  .Skip((reviewPage - 1) * reviewPageSize)
                  .Take(reviewPageSize)
                  .Select(x => new BooksResponseDto
@@ -32,6 +48,8 @@ namespace BookCatalog.Infrastructure.Repositories
                      Description = x.Description,
                  })
                  .ToListAsync(cancellationToken);
+
+            return new GetBooksResult(count, books);
         }
 
 
@@ -50,7 +68,7 @@ namespace BookCatalog.Infrastructure.Repositories
                         Name = book.Author.Name,
                         LastName = book.Author.LastName,
                         Biography = book.Author.Biography,
-                        BirthDate = book.Author.BirthDate,
+                        BirthDate = book.Author.BirthDate
                     },
                     Description = book.Description,
                 })

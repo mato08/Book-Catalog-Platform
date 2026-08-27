@@ -18,6 +18,8 @@ namespace BookCatalog.Domain.Entities
 
         public string Genre { get; set; } = string.Empty;
 
+        public decimal Rating { get; set; } = 0;
+
         public Author Author { get; set; } = null!;
     }
 }

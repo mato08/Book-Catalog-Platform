@@ -8,5 +8,9 @@ using MediatR;
 
 namespace BookCatalog.Application.Features.Books.GetBooks
 {
-    public record GetBooksQuery(int ReviewPage, int ReviewPageSize) : IRequest<IReadOnlyList<BooksResponseDto>>;
+    public record GetBooksQuery(int ReviewPage, int ReviewPageSize, GetBooksFilterQuery Filter) : IRequest<GetBooksResult>;
+
+    public record GetBooksResult(int Count, IReadOnlyList<BooksResponseDto> Books);
+
+    public record GetBooksFilterQuery(decimal? Rating, string? Genre);
 }
